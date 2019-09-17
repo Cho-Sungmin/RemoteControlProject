@@ -10,7 +10,7 @@ Server support p2p mode and relay mode. It's possible to connect on these 2 mode
 In addition, I made an application for smart phone. It is like the'host' client.<br><br>
 
 < p.s I couldn't test well on relay mode because of limited environment... <br>
-      This project might work well without optimize option in VS20xx ><br>
+      This project might work well without optimizing option in VS20xx ><br>
 
 # I used...
   C, C++, MFC, Android, Java<br>
