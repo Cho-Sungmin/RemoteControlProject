@@ -18,8 +18,8 @@ In addition, I made an application for smart phone. It is like the'host' client.
 # Version Information
   ▶ v1.x.x is based on udp protocol. It includes udp server and 2 clients.<br><br>
   ▶ v2.0.0 has different sever which is based on IOCP.<br><br>
-  Actually, I know that IOCP is not appropriate for p2p but, I just wanna implement the server using it.<br>
-  And it support relay mode so, I think, in this case, it's quite meaningful.<br>
+  Actually, I know that IOCP is not appropriate for p2p and udp but, I just wanna implement the server using it.<br>
+ 
 
 # What I've learned
 
