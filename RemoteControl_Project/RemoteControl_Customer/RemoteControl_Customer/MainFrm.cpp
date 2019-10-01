@@ -241,7 +241,7 @@ UINT CMainFrame::Send_Thread_Func(LPVOID param)
 			imgBuf.seq++;
 			
 			if(imgBuf.seq%10 == 0)		//// Flow Control
-				Sleep(3);			
+				Sleep(1);			
 			if (feof(fp) == 1)
 			{
 				imgBuf.flag = false;
