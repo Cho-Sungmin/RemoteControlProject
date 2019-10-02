@@ -226,6 +226,14 @@ UINT CIOCPRCSeverDlg::IOCPThread(LPVOID param)
 					}
 
 				}
+				else if (head->type == PACKET_TYPE_SEND_KB)
+				{
+					if (custTable[head->uId].getHost() != nullptr)
+					{
+						pSocket->hAddr = custTable[head->uId].getCust().getPubAddr();
+						g_iocp.IOCP_SendTo(pSocket, pIO->wsaBuf);
+					}
+				}
 				else if (head->type == PACKET_TYPE_CON_CUST)			////Connection Request
 				{
 				

@@ -43,7 +43,6 @@ LRESULT MouseProc(int nCode, WPARAM wParam, LPARAM lParam)
 			MOUSEHOOKSTRUCT *pParamStruct = (MOUSEHOOKSTRUCT*)lParam;
 			hwnd = pParamStruct->hwnd;
 			GetWindowRect(hwnd, &rc);
-
 			x = pParamStruct->pt.x - rc.left;
 			y = pParamStruct->pt.y - rc.top;
 
@@ -51,6 +50,16 @@ LRESULT MouseProc(int nCode, WPARAM wParam, LPARAM lParam)
 
 			mp.point.x = x / rc.right;
 			mp.point.y = y / rc.bottom;
+			mp.msg = wParam;
+
+			SendMessage(pParamStruct->hwnd, ON_MOUSEHOOK, 0, (LPARAM)&mp);
+		}
+		else if (wParam == WM_MOUSEWHEEL)
+		{
+			MOUSEHOOKSTRUCTEX *pParamStruct = (MOUSEHOOKSTRUCTEX *)lParam;
+
+			mp.point.y = pParamStruct->mouseData;
+			mp.point.x = 0;
 			mp.msg = wParam;
 
 			SendMessage(pParamStruct->hwnd, ON_MOUSEHOOK, 0, (LPARAM)&mp);

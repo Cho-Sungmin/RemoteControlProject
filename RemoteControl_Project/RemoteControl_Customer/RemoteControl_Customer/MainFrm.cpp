@@ -343,6 +343,10 @@ UINT CMainFrame::Mouse_Thread_Func(LPVOID param)
 					Sleep(150);
 					mouse_event(MOUSEEVENTF_RIGHTDOWN, 0, 0, 0, 0);
 				}
+				else if (mp.msg == WM_MOUSEWHEEL)
+				{
+					mouse_event(MOUSEEVENTF_WHEEL, 0, 0, mp.point.y-mp.point.x, 0);
+				}
 				else if (mp.msg == DISCONNECT) {
 					sm_sendThreadFlag = false;
 					CMainFrame* pMain = (CMainFrame*)AfxGetApp()->GetMainWnd();
