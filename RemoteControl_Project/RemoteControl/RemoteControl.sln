@@ -5,7 +5,7 @@ VisualStudioVersion = 15.0.28307.168
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "RemoteControl", "RemoteControl\RemoteControl.vcxproj", "{75C36D76-C4A9-460F-BD6B-3C8847ED86A3}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mouseHook", "..\RemoteControl_Customer\mouseHook\mouseHook.vcxproj", "{4338B6B7-0BD8-4294-A2AE-8DC7312A69DD}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mouseHook", "mouseHook\mouseHook.vcxproj", "{4338B6B7-0BD8-4294-A2AE-8DC7312A69DD}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

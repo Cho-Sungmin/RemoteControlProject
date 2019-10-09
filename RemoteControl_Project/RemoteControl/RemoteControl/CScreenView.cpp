@@ -76,9 +76,10 @@ LRESULT CScreenView::OnDisplayImg(WPARAM wParam, LPARAM lParam)
 	CRect rc;
 	CImage img;
 	int result;
+	IStream* p_istream = (IStream*)wParam;
 
 	this->GetClientRect(&rc);
-	result = img.Load(_T("img.jpg"));
+	result = img.Load(p_istream);
 
 	if (result == 0)
 	{
@@ -119,7 +120,7 @@ LRESULT CScreenView::OnKBHook(WPARAM wParam, LPARAM lParam)
 	CMainFrame *pMain = (CMainFrame *)AfxGetMainWnd();
 	CRemoteControlDoc* pDoc = (CRemoteControlDoc*)pMain->GetActiveDocument();
 
-	int nCode = (int)wParam;
+	int nCode = *(int*)wParam;
 	DWORD dwSent = 0, dwFlag = 0;
 	WSABUF wsaBuf[2];
 	PACKET_INFO head;

@@ -168,43 +168,50 @@ UINT CMainFrame::Recv_Thread_Func(LPVOID param)
 
 UINT CMainFrame::Img_Thread_Func(LPVOID param)
 {
-	FILE *fp;
 	Image_Packet data;
 	HWND h_view = (HWND) param;
 	bool enter;
 	int seq;
+	HGLOBAL h_buffer = ::GlobalAlloc(GMEM_MOVEABLE, GLOBAL_MEMORY_SIZE);
+	IStream* p_istream;
+	char* buf;
+	int readSize = 0;
 
-	while (ImgThreadFlag)
-	{
-		seq = 0;
-		fopen_s(&fp, "img.jpg", "wb");
-		fseek(fp, 0, SEEK_SET);
-		while(ImgThreadFlag)
+	if (::CreateStreamOnHGlobal(h_buffer, FALSE, &p_istream) == S_OK)
+	{	
+		buf = (char*)::GlobalLock(h_buffer);
+		while (ImgThreadFlag)
 		{
-			cs.Lock();
-			enter = que.dequeue(&data);
-			cs.Unlock();
+			readSize = 0;
+			seq = 0;
 
-			if (enter)						//// queue was not empty
+			while (ImgThreadFlag)
 			{
-				if(data.seq > seq){			//// still have fragment
-					fwrite(data.data, 1, data.size, fp);
-					seq = data.seq;
+				cs.Lock();
+				enter = que.dequeue(&data);
+				cs.Unlock();
 
-					if (data.flag == false)	//// last data is arrived
-						break;
+				if (enter)						//// queue was not empty
+				{
+					if (data.seq > seq) {			//// still have fragment
+						memcpy(buf + readSize, data.data, data.size);
+						readSize += data.size;
+						seq = data.seq;
+
+						if (data.flag == false)	//// last data is arrived
+							break;
+					}
+					else break;
 				}
-				else break;
-			}
-			else{
-				Sleep(0);					//// switch to another thread
-			}
+				else {
+					Sleep(0);					//// switch to another thread
+				}
 
+			}
+			::SendMessage(h_view, ON_DISPLAY_IMG, (WPARAM)p_istream, 0);
+			::GlobalUnlock(h_buffer);
 		}
-		fclose(fp);
-		::SendMessage(h_view, ON_DISPLAY_IMG, 0, 0);
-	}
-	
+	}	
 	return 0;
 }
 

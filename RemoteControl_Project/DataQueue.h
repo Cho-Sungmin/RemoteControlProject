@@ -1,7 +1,7 @@
 #pragma once
 #include "atltypes.h"
-#define QSIZE 100
-#define MTU 1024
+#define QSIZE 300
+#define MTU 576
 
 typedef struct {
 	double x;

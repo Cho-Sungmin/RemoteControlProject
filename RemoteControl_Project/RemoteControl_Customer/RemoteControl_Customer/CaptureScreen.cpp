@@ -4,14 +4,18 @@
 
 CaptureScreen::CaptureScreen()
 {
-	h_screen_dc = ::GetDC(NULL);
+	h_buffer = ::GlobalAlloc(GMEM_MOVEABLE, GLOBAL_MEMORY_SIZE);
+	if (::CreateStreamOnHGlobal(h_buffer, FALSE, &p_istream) == S_OK)
+	{
+		h_screen_dc = ::GetDC(NULL);
 
-	//해상도
-	width = ::GetSystemMetrics(SM_CXSCREEN);//::GetDeviceCaps(h_screen_dc, HORZRES);
-	height = ::GetSystemMetrics(SM_CYSCREEN);//::GetDeviceCaps(h_screen_dc, VERTRES); 
-	color = ::GetDeviceCaps(h_screen_dc, BITSPIXEL);
+		//해상도
+		width = ::GetSystemMetrics(SM_CXSCREEN);//::GetDeviceCaps(h_screen_dc, HORZRES);
+		height = ::GetSystemMetrics(SM_CYSCREEN);//::GetDeviceCaps(h_screen_dc, VERTRES); 
+		color = ::GetDeviceCaps(h_screen_dc, BITSPIXEL);
 
-	img.Create(width, height, color, 0);
+		img.Create(width, height, color, 0);
+	}
 
 	/////DIB file format/////
 
@@ -41,13 +45,44 @@ CaptureScreen::~CaptureScreen()
 	img.Destroy();
 	if(h_screen_dc != NULL)
 		::ReleaseDC(NULL, h_screen_dc);
+	p_istream->Release();  // IStream 객체를 제거한다. 
+	if(h_buffer != NULL)
+		::GlobalFree(h_buffer);
+
 }
 
-bool CaptureScreen::capture()
+int CaptureScreen::capture(char** buf)
 {
-	::BitBlt(img.GetDC(), 0, 0, width, height, h_screen_dc, 0, 0, SRCCOPY);
-	img.Save(L"image.jpg", Gdiplus::ImageFormatJPEG);
+	int imgSize = 0;
+
+	if (h_buffer != NULL)
+	{
+
+		if (p_istream != NULL) {
+
+			LARGE_INTEGER startPos = { 0, 0 };
+			ULARGE_INTEGER tempSize;
+
+			p_istream->Seek(startPos, STREAM_SEEK_SET, NULL);
+			
+			::BitBlt(img.GetDC(), 0, 0, width, height, h_screen_dc, 0, 0, SRCCOPY);
+			img.Save(p_istream, Gdiplus::ImageFormatJPEG);
+			p_istream->Seek(startPos, STREAM_SEEK_CUR, &tempSize);	//to get img size
+		
+			imgSize = tempSize.LowPart;
+			
+		}
+	}
+	
+	*buf = (char*)::GlobalLock(h_buffer);
+	
 	if(img != NULL)
 		img.ReleaseDC();
-	return true;
+
+	return imgSize;
+}
+
+void CaptureScreen::unLockBuffer() 
+{
+	::GlobalUnlock(h_buffer);
 }

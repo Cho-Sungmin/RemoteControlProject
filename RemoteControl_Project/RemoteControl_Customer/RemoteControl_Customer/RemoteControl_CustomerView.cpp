@@ -132,20 +132,20 @@ void CRemoteControlCustomerView::setConnectView()
 
 	m_stat_id = new CStatic();
 	m_stat_id->Create(strID, WS_CHILD | WS_VISIBLE,
-		CRect(width / 2 - 90, height / 2 - 80, width / 2 + 90, height / 2 - 50), this);
+		CRect((width / 2) - 90, (height / 2) - 80, (width / 2) + 90, (height / 2) - 50), this);
 	m_stat_pwd = new CStatic();
 	m_stat_pwd->Create(strPW, WS_CHILD | WS_VISIBLE,
-		CRect(width / 2 - 90, height / 2 - 55, width / 2 + 100, height / 2 - 25), this);
+		CRect((width / 2) - 90, (height / 2) - 55, (width / 2) + 100, (height / 2) - 25), this);
 	m_bt_engage = new CButton();
 	m_bt_engage->Create(_T("접속 대기"), WS_CHILD | WS_VISIBLE,
-		CRect(width / 2 - 70, height / 2 + 30, width / 2 + 70, height / 2 + 80), this, IDC_BUTTON_ENGAGE);//140, 50
+		CRect((width / 2) - 70, (height / 2) + 30, (width / 2) + 70, (height / 2) + 80), this, IDC_BUTTON_ENGAGE);
 
 	m_bt_p2p = new CButton();
 	m_bt_p2p->Create(_T("P2P"), WS_CHILD | WS_VISIBLE | BS_AUTORADIOBUTTON | WS_GROUP
-		, CRect(width / 2 - 90, height / 2 - 25, width / 2, height / 2), this, IDC_Radio_p2p);
+		, CRect((width / 2) - 90, (height / 2) - 25, (width / 2), (height / 2)), this, IDC_Radio_p2p);
 	m_bt_relay = new CButton();
 	m_bt_relay->Create(_T("Relay"), WS_CHILD | WS_VISIBLE | BS_AUTORADIOBUTTON
-		, CRect(width / 2 + 10, height / 2 - 25, width / 2 + 100, height / 2), this, IDC_Radio_relay);
+		, CRect((width / 2) + 10, (height / 2) - 25, (width / 2) + 100, (height / 2)), this, IDC_Radio_relay);
 
 	m_bt_p2p->SetCheck(true);
 }

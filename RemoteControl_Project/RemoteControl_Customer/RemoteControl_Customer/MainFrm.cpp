@@ -12,6 +12,7 @@
 #define new DEBUG_NEW
 #endif
 
+#define PERIOD 30
 // CMainFrame
 
 int CMainFrame::uId;
@@ -77,12 +78,12 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 		return -1;      // 만들지 못했습니다.
 	}
 	m_wndStatusBar.SetIndicators(indicators, sizeof(indicators)/sizeof(UINT));
-
+	
 	HDC h_screen_bg = ::GetDC(NULL);
-	int x = (::GetDeviceCaps(h_screen_bg, HORZRES) / 2) - 290;
-	int y = (::GetDeviceCaps(h_screen_bg, VERTRES) / 2) - 200;
+	int x = (::GetDeviceCaps(h_screen_bg, HORZRES) / 2.0f) - 290;
+	int y = (::GetDeviceCaps(h_screen_bg, VERTRES) / 2.0f) - 200;
 
-	SetWindowPos(NULL, x, y, 480, 400, NULL);
+	SetWindowPos(NULL, x, y, 0, 0, SWP_NOSIZE);
 
 	return 0;
 }
@@ -173,7 +174,7 @@ LRESULT CMainFrame::OnThread(WPARAM wParam, LPARAM lParam)
 	if (head.type == CON_FAILED || size == -1)
 	{
 		AfxMessageBox(_T("접속 실패!!"));
-		pView->m_bt_engage->SetWindowTextW(_T("접속 대기중"));
+		pView->m_bt_engage->SetWindowTextW(_T("접속 대기"));
 
 		return 0;
 	}
@@ -197,11 +198,6 @@ LRESULT CMainFrame::OnThread(WPARAM wParam, LPARAM lParam)
 		m_pMouse_thread = ::AfxBeginThread(Mouse_Thread_Func, (void*)&m_param);
 		m_pSend_thread->m_bAutoDelete = FALSE;
 		m_pMouse_thread->m_bAutoDelete = FALSE;
-		//int x = (::GetDeviceCaps(h_screen_bg, HORZRES) / 2) - 290;
-		//int y = (::GetDeviceCaps(h_screen_bg, VERTRES) / 2) - 200;
-
-		//SetWindowPos(NULL, x, y, 480, 400, NULL);
-		//pView->SendMessage(ON_DISCONNECT, 0, 0);
 
 		return 1;
 
@@ -211,13 +207,15 @@ LRESULT CMainFrame::OnThread(WPARAM wParam, LPARAM lParam)
 
 UINT CMainFrame::Send_Thread_Func(LPVOID param)
 {
-	FILE* fp;
 	WSABUF wsaBuf[2];
 	DWORD dwSent = 0;
 	Image_Packet imgBuf; 
 	RC_Param *p = (RC_Param*)param;
 	int addr_len = sizeof(SOCKADDR_IN);
 	PACKET_INFO head;
+	char* p_imgData;
+	int imgSize = 0;
+	int readSize = 0;
 
 	head.type = PACKET_TYPE_SEND_IMG;
 	head.uId = uId;
@@ -231,29 +229,37 @@ UINT CMainFrame::Send_Thread_Func(LPVOID param)
 	while (sm_sendThreadFlag)
 	{
 		imgBuf.seq = 0;
-		m_cap.capture();
-		fopen_s(&fp, "image.jpg", "rb");
-		fseek(fp, 0, SEEK_SET);
+		readSize = 0;
+		imgSize = m_cap.capture(&p_imgData);
+	
 		while (1)
 		{
 			imgBuf.flag = true;
-			imgBuf.size = fread(imgBuf.data, 1, sizeof(imgBuf.data), fp);
+
+			if (imgSize >= MTU)
+				imgBuf.size = MTU;
+			else
+				imgBuf.size = imgSize;
+
+			memcpy(imgBuf.data, p_imgData + readSize, imgBuf.size);
+
+			readSize += imgBuf.size;
+			imgSize -= imgBuf.size;
 			imgBuf.seq++;
-			
-			if(imgBuf.seq%10 == 0)		//// Flow Control
-				Sleep(1);			
-			if (feof(fp) == 1)
+
+			if (imgBuf.seq%PERIOD == 0)		//// Flow Control
+				Sleep(2);
+			if (imgSize < 1)
 			{
 				imgBuf.flag = false;
 				WSASendTo(p->sock, wsaBuf, 2, &dwSent, 0, (SOCKADDR*)&p->addr, addr_len, NULL, NULL);
-				
+				m_cap.unLockBuffer();
 				break;
 			}
 			else {
 				WSASendTo(p->sock, wsaBuf, 2, &dwSent, 0, (SOCKADDR*)&p->addr, addr_len, NULL, NULL);
 			}
 		}
-		fclose(fp);
 	}
 	return 0;
 }
