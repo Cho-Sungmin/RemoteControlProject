@@ -120,7 +120,7 @@ LRESULT CScreenView::OnKBHook(WPARAM wParam, LPARAM lParam)
 	CMainFrame *pMain = (CMainFrame *)AfxGetMainWnd();
 	CRemoteControlDoc* pDoc = (CRemoteControlDoc*)pMain->GetActiveDocument();
 
-	int nCode = *(int*)wParam;
+	int nCode = *(int*)lParam;
 	DWORD dwSent = 0, dwFlag = 0;
 	WSABUF wsaBuf[2];
 	PACKET_INFO head;

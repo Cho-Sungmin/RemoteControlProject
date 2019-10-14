@@ -76,7 +76,7 @@ LRESULT KeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
 	if (nCode > 0) {
 		if (!(lParam & 0x80000000) && hwnd != NULL) {
 			pParamStruct = (KBDLLHOOKSTRUCT*)lParam;
-			SendMessage(hwnd, ON_KBHOOK, wParam, 0);
+			SendMessage(hwnd, ON_KBHOOK, wParam, (LPARAM)&nCode);
 		}
 	}
 
