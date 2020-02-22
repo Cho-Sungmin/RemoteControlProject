@@ -30,6 +30,7 @@ public:
 	afx_msg int OnCreate(LPCREATESTRUCT lpCreateStruct);
 	afx_msg LRESULT OnMouseHook(WPARAM wParam, LPARAM lParam);
 	afx_msg LRESULT OnKBHook(WPARAM wParam, LPARAM lParam);
+	afx_msg LRESULT OnSendACK(WPARAM wParam, LPARAM lParam);
 };
 
 

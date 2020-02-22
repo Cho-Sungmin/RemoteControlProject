@@ -206,7 +206,8 @@ UINT CIOCPRCSeverDlg::IOCPThread(LPVOID param)
 						g_iocp.IOCP_SendTo(pSocket, pIO->wsaBuf);
 					}
 				}
-				else if (head->type == PACKET_TYPE_SEND_MP)
+				else if (head->type == PACKET_TYPE_SEND_MP || head->type == PACKET_TYPE_SEND_KB 
+							|| head->type == PACKET_TYPE_SEND_ACK)
 				{
 					if (st_customerTable.find(head->uId) != st_customerTable.end())
 					{
@@ -216,15 +217,6 @@ UINT CIOCPRCSeverDlg::IOCPThread(LPVOID param)
 						{
 							st_customerTable.erase(head->uId);
 						}
-					}
-
-				}
-				else if (head->type == PACKET_TYPE_SEND_KB)
-				{
-					if (st_customerTable.find(head->uId) != st_customerTable.end())
-					{
-						pSocket->hAddr = st_customerTable[head->uId].first.getPubAddr();
-						g_iocp.IOCP_SendTo(pSocket, pIO->wsaBuf);
 					}
 				}
 				else if (head->type == PACKET_TYPE_CON_CUST)	//Connection Request

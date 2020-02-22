@@ -13,8 +13,13 @@
 #define RELAY_PORT 3333
 #define UDP_PORT 4444
 #define itoa(x) #x
-#define MTU 576
+#define MTU 1024
+#define BIT_RATE 100
 
+#define ON_DISPLAY_IMG WM_USER+2
+#define ON_THREAD WM_USER + 3
+#define ON_SCREEN WM_USER + 4
+#define ON_SEND_ACK WM_USER + 5
 #define ON_MOUSEHOOK 9000
 #define ON_KBHOOK 9001
 
@@ -167,6 +172,7 @@ typedef struct {
 #define PACKET_TYPE_SEND_IMG 3
 #define PACKET_TYPE_SEND_MP 4
 #define PACKET_TYPE_SEND_KB 5
+#define PACKET_TYPE_SEND_ACK 6	// for flow control
 #define CON_FAILED 0
 #define CON_SUCCESS 1
 #define MODE_P2P 1

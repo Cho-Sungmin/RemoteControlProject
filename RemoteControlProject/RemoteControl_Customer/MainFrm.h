@@ -28,11 +28,12 @@ public:
 	RC_Param m_param;
 	
 	static int st_uId;
+	static int st_ackNum;
 
 	static CaptureScreen st_cap;
 	CWinThread *m_pSend_thread;
-	CWinThread *m_pMouse_thread;
-	static bool st_sendThreadFlag;
+	CWinThread *m_pRecv_thread;
+	static bool st_threadFlag;
 
 // 작업입니다.
 public:
@@ -61,7 +62,7 @@ protected:
 	// 스레드 함수
 public:
 	static UINT Send_Thread_Func(LPVOID param);
-	static UINT Mouse_Thread_Func(LPVOID param);
+	static UINT Recv_Thread_Func(LPVOID param);
 };
 
 

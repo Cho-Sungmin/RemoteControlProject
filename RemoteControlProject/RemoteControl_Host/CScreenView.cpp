@@ -7,7 +7,7 @@
 #include "resource.h"
 #include "MainFrm.h"
 
-#define ON_DISPLAY_IMG WM_USER+2
+
 
 // CScreenView
 
@@ -27,6 +27,7 @@ BEGIN_MESSAGE_MAP(CScreenView, CView)
 	ON_MESSAGE(ON_MOUSEHOOK, &OnMouseHook)
 	ON_MESSAGE(ON_KBHOOK, &OnKBHook)
 	ON_MESSAGE(ON_DISPLAY_IMG, &OnDisplayImg)
+	ON_MESSAGE(ON_SEND_ACK, &OnSendACK)
 	ON_WM_CREATE()
 END_MESSAGE_MAP()
 
@@ -75,12 +76,12 @@ LRESULT CScreenView::OnDisplayImg(WPARAM wParam, LPARAM lParam)
 	CRect rc;
 	CImage img;
 	int result;
-	IStream* p_istream = (IStream*)wParam;
+	IStream* pIstream = (IStream*)wParam;
 
 	this->GetClientRect(&rc);
-	result = img.Load(p_istream);
+	result = img.Load(pIstream);
 
-	if (result == 0)
+	if (!FAILED(result))
 	{
 		img.Draw(m_hdc, 0, 0, rc.right, rc.bottom);
 	}
@@ -122,7 +123,6 @@ LRESULT CScreenView::OnKBHook(WPARAM wParam, LPARAM lParam)
 	/* send packets about keyboard events */
 
 	CMainFrame *pMain = (CMainFrame *)AfxGetMainWnd();
-	CRemoteControlDoc* pDoc = (CRemoteControlDoc*)pMain->GetActiveDocument();
 
 	int nCode = *(int*)lParam;
 	WSABUF wsaBuf[2];
@@ -134,15 +134,34 @@ LRESULT CScreenView::OnKBHook(WPARAM wParam, LPARAM lParam)
 
 	wsaBuf[0].buf = (char*)&head;
 	wsaBuf[0].len = sizeof(head);
-
 	wsaBuf[1].buf = (char*)&nCode;
 	wsaBuf[1].len = sizeof(nCode);
 
 
 	int addr_len = sizeof(pMain->param.addr);
 
-	WSASendTo(pMain->m_udpSock, wsaBuf, 2, &dwSent, dwFlag, (SOCKADDR*)&pMain->param.addr, addr_len, NULL, NULL);
+	WSASendTo(pMain->m_udpSock, wsaBuf, 2, &dwSent, dwFlag, (SOCKADDR*)&pMain->m_udpClntAddr, addr_len, NULL, NULL);
 
+	return 0;
+}
+LRESULT CScreenView::OnSendACK(WPARAM wParam, LPARAM lParam)
+{
+	/* send ack packet with flow control information */
+	DWORD dwSent = 0, dwFlag = 0;
+	PACKET_INFO head;
+	head.type = PACKET_TYPE_SEND_ACK;
+	head.uId = st_uId;
+
+	WSABUF wsaBuf[2];
+	wsaBuf[0].buf = (char*)&head;
+	wsaBuf[0].len = sizeof(head);
+	int packetSize = *(int*)lParam;
+	wsaBuf[1].buf = (char*)&packetSize;
+	wsaBuf[1].len = sizeof(packetSize);
+
+	CMainFrame* pMain = (CMainFrame*)AfxGetMainWnd();
+	int addr_len = sizeof(pMain->param.addr);
+	WSASendTo(pMain->m_udpSock, wsaBuf, 2, &dwSent, dwFlag, (SOCKADDR*)&pMain->m_udpClntAddr, addr_len, NULL, NULL);
 
 	return 0;
 }

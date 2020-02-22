@@ -13,6 +13,7 @@
 #endif
 
 CCriticalSection CMainFrame::st_cs;
+int CMainFrame::st_ackNum = BIT_RATE;
 
 // CMainFrame
 
@@ -184,17 +185,18 @@ UINT CMainFrame::Img_Thread_Func(LPVOID param)
 	bool enter;
 	int readSize = 0;
 	Image_Packet data;
-	IStream* p_istream;
-	HWND h_view = (HWND) param;
+	IStream* pIstream;
+	HWND hScView = (HWND) param;
 	HGLOBAL h_buffer = ::GlobalAlloc(GMEM_MOVEABLE, GLOBAL_MEMORY_SIZE);
 
-	if (::CreateStreamOnHGlobal(h_buffer, FALSE, &p_istream) == S_OK)
+	if (::CreateStreamOnHGlobal(h_buffer, TRUE, &pIstream) == S_OK)
 	{	
 		buf = (char*)::GlobalLock(h_buffer);
 		while (st_ImgThreadFlag)
 		{
+			int tmp = 0;
 			readSize = 0;
-			seq = 0;
+			seq = 1;
 
 			while (st_ImgThreadFlag)
 			{
@@ -204,26 +206,47 @@ UINT CMainFrame::Img_Thread_Func(LPVOID param)
 
 				if (enter)	// queue was not empty
 				{
-					if (data.seq > seq)		// still have fragment
+					if (data.seq >= seq)		// still have fragment
 					{
+						if (data.seq == seq)	// completely received
+						{
+							seq++;
+						}
+						else                    // missed packets
+						{
+							tmp++;
+							seq = data.seq+1;
+						}
 						memcpy(buf + readSize, data.data, data.size);
 						readSize += data.size;
-						seq = data.seq;
+						if (data.flag == false)		// the last packet is arrived
+						{
+							if (tmp < 1) {	// broken img skip
+								st_ackNum++;	// flow control
+								ZeroMemory(buf + readSize, GLOBAL_MEMORY_SIZE - readSize);
+								::SendMessage(hScView, ON_DISPLAY_IMG, (WPARAM)pIstream, 0);
+							}
+							else
+								st_ackNum -= 3;	// flow control
 
-						if (data.flag == false)		// last data is arrived
 							break;
+						}
 					}
-					else
+					else 		// missed the last packet
+					{
+						st_ackNum -= 3;	// flow control
 						break;
+					}
 				}
-				else 
+				else
 					Sleep(0);					// switch to another thread
-
 			}//while
-			::SendNotifyMessage(h_view, ON_DISPLAY_IMG, (WPARAM)p_istream, 0);
+			if (st_ackNum < 1)
+				st_ackNum = 1;
+			::SendNotifyMessage(hScView, ON_SEND_ACK, 0, (LPARAM)&st_ackNum);
 		}//while
 		::GlobalUnlock(h_buffer);
-		p_istream->Release();
+		pIstream->Release();
 	}	
 	
 	return 0;
@@ -289,7 +312,7 @@ LRESULT CMainFrame::OnThread(WPARAM wParam, LPARAM lParam)
 	{
 		m_pScView->st_uId = head.uId;
 
-		if(buf.getMode())
+		if(buf.getMode() == MODE_P2P)
 			m_udpClntAddr = buf.getPubAddr();		////p2p mode
 	
 		/////Initializing hooking//////
@@ -306,7 +329,7 @@ LRESULT CMainFrame::OnThread(WPARAM wParam, LPARAM lParam)
 		return 1;
 	}
 }
-/////////??????????????????//////////////////
+
 LRESULT CMainFrame::OnScreen(WPARAM wParam, LPARAM lParam)
 {
 	int addr_len = sizeof(SOCKADDR_IN);
@@ -327,15 +350,17 @@ LRESULT CMainFrame::OnScreen(WPARAM wParam, LPARAM lParam)
 		m_pScView->OnInitialUpdate();
 	}
 
+	/* change veiw */
 	SetActiveView(m_pScView, 1);
 	m_pScView->ShowWindow(SW_SHOW);
 	m_pRcView->ShowWindow(SW_HIDE);
 	m_pScView->SetDlgCtrlID(AFX_IDW_PANE_FIRST);
 	RecalcLayout();
 
-	if(m_pRcView->m_bt_p2p.GetCheck())
+	if(m_pRcView->m_bt_p2p.GetCheck() == MODE_P2P)
 		sendto(m_udpSock, dummy, sizeof(dummy), 0, (SOCKADDR*)&m_udpClntAddr, addr_len);	//// for hole punching
 
+	/* create threads */
 	st_recvThreadFlag = true;
 	st_ImgThreadFlag = true;
 	m_pRecvThread = AfxBeginThread(Recv_Thread_Func, (LPVOID)&param);
@@ -343,6 +368,7 @@ LRESULT CMainFrame::OnScreen(WPARAM wParam, LPARAM lParam)
 	m_pRecvThread->m_bAutoDelete = FALSE;
 	m_pImgThread->m_bAutoDelete = FALSE;
 
+	/* hook dll dynamic call */
 	mouseHookStart(GetCurrentThreadId());
 	kbHookStart(GetCurrentThreadId());
 

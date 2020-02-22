@@ -5,7 +5,7 @@
 CaptureScreen::CaptureScreen()
 {
 	h_buffer = ::GlobalAlloc(GMEM_MOVEABLE, GLOBAL_MEMORY_SIZE);
-	if (::CreateStreamOnHGlobal(h_buffer, FALSE, &p_istream) == S_OK)
+	if (::CreateStreamOnHGlobal(h_buffer, TRUE, &p_istream) == S_OK)
 	{
 		h_screen_dc = ::GetDC(NULL);
 

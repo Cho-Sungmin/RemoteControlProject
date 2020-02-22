@@ -99,11 +99,9 @@ LRESULT CRemoteControlCustomerView::OnDisConnect(WPARAM wParam, LPARAM lParam)
 {
 	/* replace controls after disconnection */
 	delCtrl();
-
+	setConnectView();
 	GetParentFrame()->RecalcLayout();
 	ResizeParentToFit();
-
-	setConnectView();
 
 	UpdateWindow();
 

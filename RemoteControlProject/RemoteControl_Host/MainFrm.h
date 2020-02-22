@@ -9,9 +9,6 @@
 #include "CModaless.h"
 #include "CScreenView.h"
 
-#define ON_THREAD WM_USER + 3
-#define ON_SCREEN WM_USER + 4
-
 #define GLOBAL_MEMORY_SIZE 1024 * 1024
 
 typedef VOID(CALLBACK* PFN_MOUSE_HOOKSTART)(DWORD);
@@ -40,6 +37,7 @@ public:
 	SOCKET m_udpSock;
 	RC_Param param;
 	static CCriticalSection st_cs;
+	static int st_ackNum;
 
 	static DataQueue<Image_Packet> st_que;
 	CWinThread *m_pRecvThread, *m_pImgThread;

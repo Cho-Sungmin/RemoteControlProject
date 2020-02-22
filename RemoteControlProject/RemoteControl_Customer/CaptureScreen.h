@@ -1,5 +1,5 @@
 #pragma once
-#define GLOBAL_MEMORY_SIZE 1024 * 1024
+#define GLOBAL_MEMORY_SIZE 1024 * 512
 class CaptureScreen
 {
 private:

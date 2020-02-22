@@ -1,6 +1,6 @@
 #pragma once
 #include "atltypes.h"
-#define QSIZE 300
+#define QSIZE 500
 
 template <typename data>
 class DataQueue

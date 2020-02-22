@@ -11,12 +11,11 @@
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #endif
-
-#define PERIOD 30
 // CMainFrame
 
 int CMainFrame::st_uId;
-bool CMainFrame::st_sendThreadFlag;
+int CMainFrame::st_ackNum = BIT_RATE;
+bool CMainFrame::st_threadFlag;
 CaptureScreen CMainFrame::st_cap;
 
 IMPLEMENT_DYNCREATE(CMainFrame, CFrameWnd)
@@ -43,7 +42,7 @@ CMainFrame::CMainFrame() noexcept
 
 CMainFrame::~CMainFrame()
 {
-	st_sendThreadFlag = false;		//Thread exit
+	st_threadFlag = false;		//Thread exit
 
 	/* socket close */
 	closesocket(m_udpSock);
@@ -61,13 +60,13 @@ CMainFrame::~CMainFrame()
 			delete m_pSend_thread;
 		}
 	}
-	if (m_pMouse_thread != NULL) {
-		::GetExitCodeThread(m_pMouse_thread->m_hThread, &dwExitCode);
+	if (m_pRecv_thread != NULL) {
+		::GetExitCodeThread(m_pRecv_thread->m_hThread, &dwExitCode);
 		if (dwExitCode != STILL_ACTIVE)
-			delete m_pMouse_thread;
+			delete m_pRecv_thread;
 		else {
-			::WaitForSingleObject(m_pMouse_thread->m_hThread, INFINITE);
-			delete m_pMouse_thread;
+			::WaitForSingleObject(m_pRecv_thread->m_hThread, INFINITE);
+			delete m_pRecv_thread;
 		}
 	}
 }
@@ -201,7 +200,7 @@ LRESULT CMainFrame::OnThread(WPARAM wParam, LPARAM lParam)
 	}
 	else {
 		st_uId = head.uId;
-		if (buf.getMode()) {
+		if (buf.getMode() == MODE_P2P) {
 			m_udpAddr = buf.getPubAddr();		// p2p mode
 			
 			/* dummy packet for STUN */
@@ -209,7 +208,7 @@ LRESULT CMainFrame::OnThread(WPARAM wParam, LPARAM lParam)
 			sendto(m_udpSock, dummy, 2, 0, (SOCKADDR*)&m_udpAddr, addr_len);	
 			recvfrom(m_udpSock, dummy, 2, 0, (SOCKADDR*)&m_udpAddr, &addr_len);
 		}
-		st_sendThreadFlag = true;	//while loop flag
+		st_threadFlag = true;	//while loop flag
 		
 		/* for a window after connetion */
 		int x = (::GetDeviceCaps(h_screen_bg, HORZRES)) - 450;
@@ -226,9 +225,9 @@ LRESULT CMainFrame::OnThread(WPARAM wParam, LPARAM lParam)
 
 		/* start threads */
 		m_pSend_thread = ::AfxBeginThread(Send_Thread_Func, (void*)&m_param);
-		m_pMouse_thread = ::AfxBeginThread(Mouse_Thread_Func, (void*)&m_param);
+		m_pRecv_thread = ::AfxBeginThread(Recv_Thread_Func, (void*)&m_param);
 		m_pSend_thread->m_bAutoDelete = FALSE;
-		m_pMouse_thread->m_bAutoDelete = FALSE;
+		m_pRecv_thread->m_bAutoDelete = FALSE;
 
 		return 1;
 	}
@@ -257,12 +256,12 @@ UINT CMainFrame::Send_Thread_Func(LPVOID param)
 	wsaBuf[1].buf = (char*)&imgBuf;
 	wsaBuf[1].len = sizeof(imgBuf);
 
-	while (st_sendThreadFlag)
+	while (st_threadFlag)
 	{
 		imgBuf.seq = 0;
 		readSize = 0;
 		const char* p_imgData = st_cap.capture(imgSize);
-	
+
 		while (1)	// escape condition : when the last packet of img comes
 		{
 			imgBuf.flag = true;		// a packet is not the last one
@@ -279,8 +278,9 @@ UINT CMainFrame::Send_Thread_Func(LPVOID param)
 			imgSize -= imgBuf.size;
 			imgBuf.seq++;
 
-			if (imgBuf.seq%PERIOD == 0)		//// Flow Control
-				Sleep(2);
+			if (imgBuf.seq%st_ackNum == 0)		//// Flow Control
+				Sleep(1);
+
 			if (imgSize < 1)	// the last packet comes
 			{
 				imgBuf.flag = false;
@@ -292,12 +292,14 @@ UINT CMainFrame::Send_Thread_Func(LPVOID param)
 				WSASendTo(p->sock, wsaBuf, 2, &dwSent, 0, (SOCKADDR*)&p->addr, addr_len, NULL, NULL);
 			}
 		}
+
 	}
 	return 0;
 }
-UINT CMainFrame::Mouse_Thread_Func(LPVOID param)
+UINT CMainFrame::Recv_Thread_Func(LPVOID param)
 {
-	/* deal with packets about mouse and keyboard */
+	/* deal with packets from host client 
+	like mouse, keyboard events and packets for flow control*/
 
 	Mouse_Point mp;
 	MPoint point;
@@ -311,21 +313,24 @@ UINT CMainFrame::Mouse_Thread_Func(LPVOID param)
 
 	wsaBuf[0].buf = (char*)&head;
 	wsaBuf[0].len = sizeof(head);
-
 	wsaBuf[1].buf = (char*)&mp;
 	wsaBuf[1].len = sizeof(mp);
-	
 
 	width = ::GetSystemMetrics(SM_CXSCREEN);//::GetDeviceCaps(h_screen_dc, HORZRES);
 	height = ::GetSystemMetrics(SM_CYSCREEN);//::GetDeviceCaps(h_screen_dc, VERTRES);
 
-	while(st_sendThreadFlag)
+	while(st_threadFlag)
 	{
 		dwRecv = 0;
 		WSARecvFrom(p->sock, wsaBuf, 2, &dwRecv, &dwFlag, (SOCKADDR*)&udpDesAddr, &addr_len, NULL,NULL);
 		if(dwRecv > 0)
 		{
-			if (head.type == PACKET_TYPE_SEND_MP) {
+			if (head.type == PACKET_TYPE_SEND_ACK)
+			{
+				memcpy(&st_ackNum, wsaBuf[1].buf, sizeof(st_ackNum));
+			}
+			else if (head.type == PACKET_TYPE_SEND_MP) {
+
 				if (mp.msg == WM_LBUTTONDBLCLK)
 				{
 					point.x = mp.x * width;
@@ -384,10 +389,10 @@ UINT CMainFrame::Mouse_Thread_Func(LPVOID param)
 				}
 				else if (mp.msg == WM_MOUSEWHEEL)
 				{
-					mouse_event(MOUSEEVENTF_WHEEL, 0, 0, mp.y-mp.x, 0);
+					mouse_event(MOUSEEVENTF_WHEEL, 0, 0, mp.y - mp.x, 0);
 				}
 				else if (mp.msg == DISCONNECT) {	// it's used to check disconnect issue
-					st_sendThreadFlag = false;
+					st_threadFlag = false;
 					CMainFrame* pMain = (CMainFrame*)AfxGetApp()->GetMainWnd();
 
 					int x = (::GetDeviceCaps(::GetDC(NULL), HORZRES) / 2) - 290;
@@ -400,6 +405,7 @@ UINT CMainFrame::Mouse_Thread_Func(LPVOID param)
 
 				}
 			}
+			
 			else if (head.type == PACKET_TYPE_SEND_KB)
 			{
 				int nCode;
@@ -418,7 +424,7 @@ UINT CMainFrame::Mouse_Thread_Func(LPVOID param)
 			fprintf(fp, "Error : %d\n", errNo);
 			fclose(fp);
 
-			st_sendThreadFlag = false;		
+			st_threadFlag = false;
 		}
 	}
 	return 0;
