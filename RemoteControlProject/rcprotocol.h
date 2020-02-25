@@ -9,7 +9,8 @@
 #define ID_LENGTH 10
 #define PW_LENGTH 10
 
-#define SERVER_IP "192.168.0.13"		////use your server ip
+//#define SERVER_IP "192.168.0.13"		////use your server ip
+#define SERVER_IP "192.168.0.19"		////use your server ip
 #define RELAY_PORT 3333
 #define UDP_PORT 4444
 #define itoa(x) #x

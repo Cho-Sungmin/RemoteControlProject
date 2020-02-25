@@ -47,7 +47,7 @@ public:
 
 	static IOCP_IO g_iocp;
 	static HANDLE g_hIocp;
-	static std::map<int, pair<Log, Log>> st_customerTable;
+	static std::map<int, pair<Log, Log>> st_UserTable;
 	static bool st_flag;
 
 	static UINT IOCPThread(LPVOID param);

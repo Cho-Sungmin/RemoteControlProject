@@ -14,7 +14,7 @@
 IOCP_IO CIOCPRCSeverDlg::g_iocp;
 HANDLE CIOCPRCSeverDlg::g_hIocp;
 bool CIOCPRCSeverDlg::st_flag;
-std::map<int, pair<Log, Log>> CIOCPRCSeverDlg::st_customerTable;
+std::map<int, pair<Log, Log>> CIOCPRCSeverDlg::st_UserTable;
 // 응용 프로그램 정보에 사용되는 CAboutDlg 대화 상자입니다.
 
 class CAboutDlg : public CDialogEx
@@ -200,22 +200,22 @@ UINT CIOCPRCSeverDlg::IOCPThread(LPVOID param)
 
 				if (head->type == PACKET_TYPE_SEND_IMG)
 				{
-					if (st_customerTable.find(head->uId) != st_customerTable.end())
+					if (st_UserTable.find(head->uId) != st_UserTable.end())
 					{
-						pSocket->hAddr = st_customerTable[head->uId].second.getPubAddr();
+						pSocket->hAddr = st_UserTable[head->uId].second.getPubAddr();
 						g_iocp.IOCP_SendTo(pSocket, pIO->wsaBuf);
 					}
 				}
 				else if (head->type == PACKET_TYPE_SEND_MP || head->type == PACKET_TYPE_SEND_KB 
 							|| head->type == PACKET_TYPE_SEND_ACK)
 				{
-					if (st_customerTable.find(head->uId) != st_customerTable.end())
+					if (st_UserTable.find(head->uId) != st_UserTable.end())
 					{
-						pSocket->hAddr = st_customerTable[head->uId].first.getPubAddr();
+						pSocket->hAddr = st_UserTable[head->uId].first.getPubAddr();
 						g_iocp.IOCP_SendTo(pSocket, pIO->wsaBuf);
 						if (((Mouse_Point*)&pIO->buf)->msg == DISCONNECT)
 						{
-							st_customerTable.erase(head->uId);
+							st_UserTable.erase(head->uId);
 						}
 					}
 				}
@@ -230,7 +230,7 @@ UINT CIOCPRCSeverDlg::IOCPThread(LPVOID param)
 					customer.setPrvAddr(tmp);
 					int key = std::stoi(customer.getID());
 					pair<Log, Log> value = make_pair(customer, customer);
-					st_customerTable.insert(make_pair(key, value));		//customer register
+					st_UserTable.insert(make_pair(key, value));		//customer register
 				}
 				else if (head->type == PACKET_TYPE_CON_HOST)
 				{
@@ -246,9 +246,9 @@ UINT CIOCPRCSeverDlg::IOCPThread(LPVOID param)
 					memcpy(&host, pIO->wsaBuf[1].buf, sizeof(Log));
 
 					int key = std::stoi(host.getID());
-					std::map<int, pair<Log, Log>>::iterator iter = st_customerTable.find(key);
+					std::map<int, pair<Log, Log>>::iterator iter = st_UserTable.find(key);
 					
-					if (iter != st_customerTable.end() && iter->second.first == host)
+					if (iter != st_UserTable.end() && iter->second.first == host)
 					{
 						
 						pIO->head.type = CON_SUCCESS;
@@ -277,7 +277,7 @@ UINT CIOCPRCSeverDlg::IOCPThread(LPVOID param)
 
 						if (customer.getMode() == MODE_P2P)
 						{
-							st_customerTable.erase(key);	//clean the table
+							st_UserTable.erase(key);	//clean the table
 						}
 					}
 					else //found customer waiting for the host
